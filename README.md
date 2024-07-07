@@ -36,7 +36,7 @@ PDF AnswerBot is an advanced document processing and chatbot application designe
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/PDF-AnswerBot.git
+git clone https://github.com/Potafe/PDF-AnswerBot.git
 cd PDF-AnswerBot
 ```
 ### Package Installations
