@@ -36,8 +36,8 @@ PDF AnswerBot is an advanced document processing and chatbot application designe
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/PDF-AnswerBot.git
-cd docuquery-ai
+git clone https://github.com/Potafe/PDF-AnswerBot.git
+cd PDF-AnswerBot
 ```
 ### Package Installations
 
@@ -50,7 +50,7 @@ Running the Application
 To start the Flask application, run the following command:
 
 ```bash
-python app.py
+python rag_test.py
 ```
 ### Uploading a PDF
 - Open the application in your web browser.
