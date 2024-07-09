@@ -50,7 +50,7 @@ Running the Application
 To start the Flask application, run the following command:
 
 ```bash
-python rag_test.py
+streamlit run app.py
 ```
 ### Uploading a PDF
 - Open the application in your web browser.
