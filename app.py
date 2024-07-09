@@ -7,8 +7,15 @@ from langchain_community.vectorstores import Chroma
 from langchain.chains.combine_documents import create_stuff_documents_chain 
 from langchain.chains import create_retrieval_chain
 from langchain_core.prompts.prompt import PromptTemplate
+import os
+import time
+
 
 folder_path = "db"
+pdf_folder = "pdf"
+
+# Ensure the PDF folder exists
+os.makedirs(pdf_folder, exist_ok=True)
 
 cached_llm = Ollama(model = "llama3:8b")
 embedding = FastEmbedEmbeddings()
@@ -18,7 +25,7 @@ text_splitter = RecursiveCharacterTextSplitter(
 
 raw_prompt = PromptTemplate.from_template(
     """ 
-    <s>[INST] You are a technical assistant good at searching docuemnts. If you do not have an answer from the provided information say so. [/INST] </s>
+    <s>[INST] You are a technical assistant good at searching documents. If you do not have an answer from the provided information say so. [/INST] </s>
     [INST] 
         {input}
         Context: {context}
@@ -32,7 +39,7 @@ st.title("Document Search and Chatbot")
 def upload_pdf():
     uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
     if uploaded_file is not None:
-        save_file = f"pdf/{uploaded_file.name}"
+        save_file = f"{pdf_folder}/{uploaded_file.name}"
         with open(save_file, "wb") as f:
             f.write(uploaded_file.getbuffer())
         
@@ -52,21 +59,44 @@ def upload_pdf():
     else:
         st.warning("Please upload a PDF file.")
 
+def show_uploaded_pdfs():
+    st.subheader("Uploaded PDFs")
+    pdf_files = os.listdir(pdf_folder)
+    if pdf_files:
+        for pdf in pdf_files:
+            if st.button(pdf):
+                st.write(f"Displaying contents of {pdf}:")
+                pdf_path = f"{pdf_folder}/{pdf}"
+                loader = PDFPlumberLoader(pdf_path)
+                docs = loader.load_and_split()
+                for doc in docs:
+                    st.write(doc.page_content)
+    else:
+        st.write("No PDFs uploaded yet.")
+
 def ask_query():
     query = st.text_input("Enter your query")
     if st.button("Get Answer"):
         if query:
-            vector_store = Chroma(persist_directory=folder_path, embedding_function=embedding)
-            retriever = vector_store.as_retriever(
-                search_type="similarity_score_threshold",
-                search_kwargs={"k": 10, "score_threshold": 0.1}
-            )
+            with st.spinner("Assistant is thinking...."):
+                vector_store = Chroma(persist_directory=folder_path, embedding_function=embedding)
+                retriever = vector_store.as_retriever(
+                    search_type="similarity_score_threshold",
+                    search_kwargs={"k": 2, "score_threshold": 0.1}
+                )
 
-            document_chain = create_stuff_documents_chain(cached_llm, raw_prompt)
-            chain = create_retrieval_chain(retriever, document_chain)
+                document_chain = create_stuff_documents_chain(cached_llm, raw_prompt)
+                chain = create_retrieval_chain(retriever, document_chain)
 
-            result = chain.invoke({"input": query})
-            st.write(result)
+                result = chain.invoke({"input": query})
+
+            answer_placeholder = st.empty()
+            answer = result["answer"]
+            typed_answer = ""
+            for char in answer:
+                typed_answer += char
+                answer_placeholder.write(typed_answer)
+                time.sleep(0.05)
 
             sources = [{"source": doc.metadata["source"], "page_content": doc.page_content} for doc in result["context"]]
             st.json({"answer": result["answer"], "sources": sources})
@@ -74,9 +104,11 @@ def ask_query():
             st.warning("Please enter a query.")
 
 st.sidebar.title("Navigation")
-options = st.sidebar.radio("Go to", ["Upload PDF", "Ask Query"])
+options = st.sidebar.radio("Go to", ["Upload PDF", "Ask Query", "Show Uploaded PDFs"])
 
 if options == "Upload PDF":
     upload_pdf()
 elif options == "Ask Query":
     ask_query()
+elif options == "Show Uploaded PDFs":
+    show_uploaded_pdfs()
